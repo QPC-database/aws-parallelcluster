@@ -65,6 +65,7 @@ TEST_DEFAULTS = {
     "pre_install": None,
     "post_install": None,
     "vpc_stack": None,
+    "api_uri": None,
     "cluster": None,
     "api_definition_s3_uri": None,
     "public_ecr_image_uri": None,
@@ -306,6 +307,11 @@ def _init_argparser():
         default=TEST_DEFAULTS.get("public_ecr_image_uri"),
     )
     debug_group.add_argument(
+        "--api-uri",
+        help="URI of an existing ParallelCluster API",
+        default=TEST_DEFAULTS.get("api_uri"),
+    )
+    debug_group.add_argument(
         "--no-delete",
         action="store_true",
         help="Don't delete stacks after tests are complete.",
@@ -509,6 +515,9 @@ def _set_custom_stack_args(args, pytest_args):
 
     if args.public_ecr_image_uri:
         pytest_args.extend(["--public-ecr-image-uri", args.public_ecr_image_uri])
+
+    if args.api_uri:
+        pytest_args.extend(["--api-uri", args.api_uri])
 
     if args.no_delete:
         pytest_args.append("--no-delete")

@@ -101,6 +101,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--api-definition-s3-uri", help="URI of the Docker image for the Lambda of the ParallelCluster API"
     )
+    parser.addoption("--api-uri", help="URI of an existing ParallelCluster API")
     parser.addoption("--instance-types-data-file", help="JSON file with additional instance types data")
     parser.addoption(
         "--credential", help="STS credential endpoint, in the format <region>,<endpoint>,<ARN>,<externalId>.", nargs="+"
@@ -348,13 +349,18 @@ def api_server_factory(cfn_stacks_factory, request, public_ecr_image_uri, api_de
 
 
 @pytest.fixture(scope="class")
-def api_client(region, api_server_factory):
+def api_client(region, api_server_factory, api_uri):
     """Define a fixture for an API client that interacts with the
     pcluster api."""
     from pcluster_client.api import cluster_operations_api
     from pcluster_client import Configuration, ApiClient
-    stack = api_server_factory(region)
-    host = stack.cfn_outputs["ParallelClusterApiInvokeUrl"]
+
+    if api_uri:
+        host = api_uri
+    else:
+        stack = api_server_factory(region)
+        host = stack.cfn_outputs["ParallelClusterApiInvokeUrl"]
+
     api_configuration = Configuration(host=host)
 
     with ApiClient(api_configuration) as api_client_instance:
@@ -902,6 +908,11 @@ def vpc_stack(vpc_stacks, region):
 @pytest.fixture(scope="class")
 def public_ecr_image_uri(request):
     return request.config.getoption("public_ecr_image_uri")
+
+
+@pytest.fixture(scope="class")
+def api_uri(request):
+    return request.config.getoption("api_uri")
 
 
 @pytest.fixture(scope="class")
