@@ -12,12 +12,13 @@
 
 
 import pytest
+import base64
 from assertpy import assert_that
 
 from tests.common.utils import generate_random_string
 
 # Client Interface
-from pcluster.api.client.model.create_cluster_request_content import CreateClusterRequestContent
+from pcluster_client.model.create_cluster_request_content import CreateClusterRequestContent
 
 @pytest.mark.regions(["us-east-2"])
 @pytest.mark.instances(["c5.xlarge"])
@@ -49,7 +50,8 @@ def _test_describe_cluster(client, cluster, region):
 
 
 def _test_create(api_client, cluster_config, region):
+    cluster_config_data = base64.b64encode(cluster_config.encode('utf-8')).decode('utf-8')
     body = CreateClusterRequestContent(f"integ-tests-{generate_random_string()}",
-                                       cluster_config,
+                                       cluster_config_data,
                                        region=region)
     return api_client.create_cluster(body)

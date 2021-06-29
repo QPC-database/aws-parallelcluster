@@ -312,18 +312,50 @@ def clusters_factory(request, region):
         factory.destroy_all_clusters(test_passed=request.node.rep_call.passed)
 
 
+@pytest.fixture(scope='class')
+def api_server_factory(cfn_stacks_factory, request, public_ecr_image_uri, api_definition_s3_uri):
+    """Creates a factory for deploying API servers on-demand to each region."""
+    api_servers = {}
+
+    def _api_server_factory(server_region):
+        api_stack_name = generate_stack_name("integ-tests-api", request.config.getoption("stackname_suffix"))
+        stack_template_path = os.path.join("..", "..", "api", "infrastructure", "parallelcluster-api.yaml")
+        with open(stack_template_path) as stack_template_file:
+            stack_template_data = stack_template_file.read()
+
+        params = [{"ParameterKey": "PublicEcrImageUri", "ParameterValue": public_ecr_image_uri},
+                  {"ParameterKey": "ApiDefinitionS3Uri", "ParameterValue": api_definition_s3_uri}]
+
+        if server_region not in api_servers:
+            logging.info(f"Creating API Server stack: {api_stack_name} in {server_region}")
+            try:
+                set_credentials(server_region, request.config.getoption("credential"))
+                stack = CfnStack(name=api_stack_name,
+                                 region=server_region,
+                                 parameters=params,
+                                 capabilities=['CAPABILITY_IAM', 'CAPABILITY_AUTO_EXPAND'],
+                                 template=stack_template_data)
+                cfn_stacks_factory.create_stack(stack)
+            finally:
+                unset_credentials()
+            api_servers[server_region] = stack
+        else:
+            logging.info(f"Found cached API Server stack: {api_stack_name} in {server_region}")
+
+        return api_servers[server_region]
+
+    yield _api_server_factory
+
+
 @pytest.fixture(scope="class")
-def api_client(region):
+def api_client(region, api_server_factory):
     """Define a fixture for an API client that interacts with the
     pcluster api."""
-    from pcluster.api.client.api import cluster_operations_api
-    from pcluster.api.client import Configuration, ApiClient
-    boto_config = Config(region_name=region)
-    apigateway = boto3.client('apigateway', config=boto_config)
-    apis = apigateway.get_rest_apis()['items']
-    api_id = next(api['id'] for api in apis if api['name'] == 'ParallelCluster')
-    host = f"{api_id}.execute-api.{region}.amazonaws.com"
-    api_configuration = Configuration(host=f"https://{host}/prod")
+    from pcluster_client.api import cluster_operations_api
+    from pcluster_client import Configuration, ApiClient
+    stack = api_server_factory(region)
+    host = stack.cfn_outputs["ParallelClusterApiInvokeUrl"]
+    api_configuration = Configuration(host=host)
 
     with ApiClient(api_configuration) as api_client_instance:
         yield cluster_operations_api.ClusterOperationsApi(api_client_instance)

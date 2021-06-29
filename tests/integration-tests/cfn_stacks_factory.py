@@ -73,13 +73,14 @@ class CfnStacksFactory:
 
         logging.info("Creating stack {0} in region {1}".format(name, region))
         self.__created_stacks[id] = stack
+        capabilities = stack.capabilities if isinstance(stack.capabilities, list) else [stack.capabilities]
         try:
             cfn_client = boto3.client("cloudformation", region_name=region)
             result = cfn_client.create_stack(
                 StackName=name,
                 TemplateBody=stack.template,
                 Parameters=stack.parameters,
-                Capabilities=[stack.capabilities],
+                Capabilities=capabilities,
             )
             stack.cfn_stack_id = result["StackId"]
             final_status = self.__wait_for_stack_creation(stack.cfn_stack_id, cfn_client)
