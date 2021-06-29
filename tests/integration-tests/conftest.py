@@ -312,6 +312,23 @@ def clusters_factory(request, region):
         factory.destroy_all_clusters(test_passed=request.node.rep_call.passed)
 
 
+@pytest.fixture(scope="class")
+def api_client(region):
+    """Define a fixture for an API client that interacts with the
+    pcluster api."""
+    from pcluster.api.client.api import cluster_operations_api
+    from pcluster.api.client import Configuration, ApiClient
+    boto_config = Config(region_name=region)
+    apigateway = boto3.client('apigateway', config=boto_config)
+    apis = apigateway.get_rest_apis()['items']
+    api_id = next(api['id'] for api in apis if api['name'] == 'ParallelCluster')
+    host = f"{api_id}.execute-api.{region}.amazonaws.com"
+    api_configuration = Configuration(host=f"https://{host}/prod")
+
+    with ApiClient(api_configuration) as api_client_instance:
+        yield cluster_operations_api.ClusterOperationsApi(api_client_instance)
+
+
 def _write_cluster_config_to_outdir(request, cluster_config):
     out_dir = request.config.getoption("output_dir")
 
