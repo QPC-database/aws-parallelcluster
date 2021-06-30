@@ -19,6 +19,7 @@ from tests.common.utils import generate_random_string
 
 # Client Interface
 from pcluster_client.model.create_cluster_request_content import CreateClusterRequestContent
+from pcluster_client.api import cluster_operations_api
 
 @pytest.mark.regions(["us-east-2"])
 @pytest.mark.instances(["c5.xlarge"])
@@ -31,11 +32,13 @@ def test_cluster_operations(scheduler, region, pcluster_config_reader, clusters_
     with open(cluster_config_path) as config_file:
         cluster_config = config_file.read()
 
-    new_cluster = clusters_factory(cluster_config_path)
-    _test_list_clusters(api_client, new_cluster, region)
-    _test_describe_cluster(api_client, new_cluster, region)
+    client = cluster_operations_api.ClusterOperationsApi(api_client)
 
-    print(_test_create(api_client, cluster_config, region))
+    new_cluster = clusters_factory(cluster_config_path)
+    _test_list_clusters(client, new_cluster, region)
+    _test_describe_cluster(client, new_cluster, region)
+
+    print(_test_create(client, cluster_config, region))
 
 
 def _test_list_clusters(client, cluster, region):

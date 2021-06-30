@@ -359,7 +359,6 @@ def api_server_factory(cfn_stacks_factory, request, public_ecr_image_uri,
 def api_client(region, api_server_factory, api_uri):
     """Define a fixture for an API client that interacts with the
     pcluster api."""
-    from pcluster_client.api import cluster_operations_api
     from pcluster_client import Configuration, ApiClient
 
     if api_uri:
@@ -371,7 +370,7 @@ def api_client(region, api_server_factory, api_uri):
     api_configuration = Configuration(host=host)
 
     with ApiClient(api_configuration) as api_client_instance:
-        yield cluster_operations_api.ClusterOperationsApi(api_client_instance)
+        yield api_client_instance
 
 
 def _write_cluster_config_to_outdir(request, cluster_config):
