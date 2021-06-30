@@ -102,6 +102,9 @@ def pytest_addoption(parser):
     parser.addoption(
         "--api-definition-s3-uri", help="URI of the Docker image for the Lambda of the ParallelCluster API"
     )
+    parser.addoption(
+        "--api-infrastructure-s3-uri", help="URI of the CloudFormation template for the ParallelCluster API"
+    )
     parser.addoption("--api-uri", help="URI of an existing ParallelCluster API")
     parser.addoption("--instance-types-data-file", help="JSON file with additional instance types data")
     parser.addoption(
@@ -315,15 +318,18 @@ def clusters_factory(request, region):
 
 
 @pytest.fixture(scope='class')
-def api_server_factory(cfn_stacks_factory, request, public_ecr_image_uri, api_definition_s3_uri):
+def api_server_factory(cfn_stacks_factory, request, public_ecr_image_uri,
+                       api_definition_s3_uri, api_infrastructure_s3_uri):
     """Creates a factory for deploying API servers on-demand to each region."""
     api_servers = {}
 
     def _api_server_factory(server_region):
         api_stack_name = generate_stack_name("integ-tests-api", request.config.getoption("stackname_suffix"))
-        stack_template_path = os.path.join("..", "..", "api", "infrastructure", "parallelcluster-api.yaml")
-        with open(stack_template_path) as stack_template_file:
-            stack_template_data = stack_template_file.read()
+
+        if not api_infrastructure_s3_uri:
+            stack_template_path = os.path.join("..", "..", "api", "infrastructure", "parallelcluster-api.yaml")
+            with open(stack_template_path) as stack_template_file:
+                stack_template_data = stack_template_file.read()
 
         params = [{"ParameterKey": "PublicEcrImageUri", "ParameterValue": public_ecr_image_uri},
                   {"ParameterKey": "ApiDefinitionS3Uri", "ParameterValue": api_definition_s3_uri}]
@@ -336,7 +342,7 @@ def api_server_factory(cfn_stacks_factory, request, public_ecr_image_uri, api_de
                                  region=server_region,
                                  parameters=params,
                                  capabilities=['CAPABILITY_IAM', 'CAPABILITY_AUTO_EXPAND'],
-                                 template=stack_template_data)
+                                 template=api_infrastructure_s3_uri or stack_template_data)
                 cfn_stacks_factory.create_stack(stack)
             finally:
                 unset_credentials()
@@ -922,6 +928,11 @@ def api_uri(request):
 @pytest.fixture(scope="class")
 def api_definition_s3_uri(request):
     return request.config.getoption("api_definition_s3_uri")
+
+
+@pytest.fixture(scope="class")
+def api_infrastructure_s3_uri(request):
+    return request.config.getoption("api_infrastructure_s3_uri")
 
 
 # If stack creation fails it'll retry once more. This is done to mitigate failures due to resources

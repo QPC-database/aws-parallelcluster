@@ -68,6 +68,7 @@ TEST_DEFAULTS = {
     "api_uri": None,
     "cluster": None,
     "api_definition_s3_uri": None,
+    "api_infrastructure_s3_uri": None,
     "public_ecr_image_uri": None,
     "no_delete": False,
     "benchmarks": False,
@@ -289,27 +290,34 @@ def _init_argparser():
         type=int,
     )
 
+    api_group = parser.add_argument_group("API options")
+    api_group.add_argument(
+        "--api-definition-s3-uri",
+        help="URI of the Docker image for the Lambda of the ParallelCluster API",
+        default=TEST_DEFAULTS.get("api_definition_s3_uri"),
+    )
+    api_group.add_argument(
+        "--api-infrastructure-s3-uri",
+        help="URI of the CloudFormation template for the ParallelCluster API",
+        default=TEST_DEFAULTS.get("api_definition_s3_uri"),
+    )
+    api_group.add_argument(
+        "--public-ecr-image-uri",
+        help="S3 URI of the ParallelCluster API spec",
+        default=TEST_DEFAULTS.get("public_ecr_image_uri"),
+    )
+    api_group.add_argument(
+        "--api-uri",
+        help="URI of an existing ParallelCluster API",
+        default=TEST_DEFAULTS.get("api_uri"),
+    )
+
     debug_group = parser.add_argument_group("Debugging/Development options")
     debug_group.add_argument(
         "--vpc-stack", help="Name of an existing vpc stack.", default=TEST_DEFAULTS.get("vpc_stack")
     )
     debug_group.add_argument(
         "--cluster", help="Use an existing cluster instead of creating one.", default=TEST_DEFAULTS.get("cluster")
-    )
-    debug_group.add_argument(
-        "--api-definition-s3-uri",
-        help="URI of the Docker image for the Lambda of the ParallelCluster API",
-        default=TEST_DEFAULTS.get("api_definition_s3_uri"),
-    )
-    debug_group.add_argument(
-        "--public-ecr-image-uri",
-        help="S3 URI of the ParallelCluster API spec",
-        default=TEST_DEFAULTS.get("public_ecr_image_uri"),
-    )
-    debug_group.add_argument(
-        "--api-uri",
-        help="URI of an existing ParallelCluster API",
-        default=TEST_DEFAULTS.get("api_uri"),
     )
     debug_group.add_argument(
         "--no-delete",
