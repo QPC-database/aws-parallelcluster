@@ -317,7 +317,7 @@ def clusters_factory(request, region):
         factory.destroy_all_clusters(test_passed=request.node.rep_call.passed)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='session')
 def api_server_factory(cfn_stacks_factory, request, public_ecr_image_uri,
                        api_definition_s3_uri, api_infrastructure_s3_uri):
     """Creates a factory for deploying API servers on-demand to each region."""
@@ -914,22 +914,22 @@ def vpc_stack(vpc_stacks, region):
     return vpc_stacks[region]
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def public_ecr_image_uri(request):
     return request.config.getoption("public_ecr_image_uri")
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def api_uri(request):
     return request.config.getoption("api_uri")
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def api_definition_s3_uri(request):
     return request.config.getoption("api_definition_s3_uri")
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def api_infrastructure_s3_uri(request):
     return request.config.getoption("api_infrastructure_s3_uri")
 
