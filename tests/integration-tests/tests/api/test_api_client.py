@@ -25,7 +25,7 @@ from pcluster_client.model.create_cluster_request_content import CreateClusterRe
 @pytest.mark.schedulers(["slurm"])
 @pytest.mark.oss(["alinux2"])
 @pytest.mark.usefixtures("region", "os", "instance")
-def test_api_client(scheduler, region, pcluster_config_reader, clusters_factory, api_client):
+def test_cluster_operations(scheduler, region, pcluster_config_reader, clusters_factory, api_client):
     cluster_config_path = pcluster_config_reader(scaledown_idletime=3)
 
     with open(cluster_config_path) as config_file:
