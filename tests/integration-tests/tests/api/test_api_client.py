@@ -16,6 +16,7 @@ import base64
 from assertpy import assert_that
 
 from tests.common.utils import generate_random_string
+from utils import generate_stack_name
 
 # Client Interface
 from pcluster_client.model.create_cluster_request_content import CreateClusterRequestContent
@@ -26,7 +27,7 @@ from pcluster_client.api import cluster_operations_api
 @pytest.mark.schedulers(["slurm"])
 @pytest.mark.oss(["alinux2"])
 @pytest.mark.usefixtures("region", "os", "instance")
-def test_cluster_operations(scheduler, region, pcluster_config_reader, clusters_factory, api_client):
+def test_cluster_operations(request, scheduler, region, pcluster_config_reader, clusters_factory, api_client):
     cluster_config_path = pcluster_config_reader(scaledown_idletime=3)
 
     with open(cluster_config_path) as config_file:
@@ -38,7 +39,9 @@ def test_cluster_operations(scheduler, region, pcluster_config_reader, clusters_
     _test_list_clusters(client, new_cluster, region)
     _test_describe_cluster(client, new_cluster, region)
 
-    print(_test_create(client, cluster_config, region))
+    stack_name = generate_stack_name("integ-tests", request.config.getoption("stackname_suffix"))
+
+    print(_test_create(client, cluster_config, region, stack_name))
 
 
 def _test_list_clusters(client, cluster, region):
@@ -52,9 +55,9 @@ def _test_describe_cluster(client, cluster, region):
     assert_that(response['cluster_name']).is_equal_to(cluster.name)
 
 
-def _test_create(api_client, cluster_config, region):
+def _test_create(api_client, cluster_config, region, stack_name):
     cluster_config_data = base64.b64encode(cluster_config.encode('utf-8')).decode('utf-8')
-    body = CreateClusterRequestContent(f"integ-tests-{generate_random_string()}",
+    body = CreateClusterRequestContent(stack_name,
                                        cluster_config_data,
                                        region=region)
     return api_client.create_cluster(body)
