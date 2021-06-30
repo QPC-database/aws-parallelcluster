@@ -22,10 +22,6 @@ from utils import generate_stack_name
 from pcluster_client.model.create_cluster_request_content import CreateClusterRequestContent
 from pcluster_client.api import cluster_operations_api
 
-@pytest.mark.regions(["us-east-2"])
-@pytest.mark.instances(["c5.xlarge"])
-@pytest.mark.schedulers(["slurm"])
-@pytest.mark.oss(["alinux2"])
 @pytest.mark.usefixtures("region", "os", "instance")
 def test_cluster_operations(request, scheduler, region, pcluster_config_reader, clusters_factory, api_client):
     cluster_config_path = pcluster_config_reader(scaledown_idletime=3)
