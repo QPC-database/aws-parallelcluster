@@ -189,7 +189,7 @@ def _log_cfn_event(event, indent):
     """Log failed CFN events."""
     from pcluster.aws.aws_api import AWSApi  # pylint: disable=import-outside-toplevel
 
-    print("%s- %s", " " * indent, AWSApi.instance().cfn.format_event(event))
+    print("{}- {}".format(" " * indent, AWSApi.instance().cfn.format_event(event)))
 
 
 def get_templates_bucket_path():
@@ -210,7 +210,8 @@ def check_if_latest_version():
     """Check if the current package version is the latest one."""
     try:
         pypi_url = "https://pypi.python.org/pypi/aws-parallelcluster/json"
-        latest = json.loads(urllib.request.urlopen(pypi_url).read())["info"]["version"]  # nosec nosemgrep
+        with urllib.request.urlopen(pypi_url) as url:  # nosec nosemgrep
+            latest = json.loads(url.read())["info"]["version"]
         if packaging.version.parse(get_installed_version()) < packaging.version.parse(latest):
             print("Info: There is a newer version %s of AWS ParallelCluster available." % latest)
     except Exception:  # nosec

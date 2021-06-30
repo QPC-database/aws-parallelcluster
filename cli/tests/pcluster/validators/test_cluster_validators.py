@@ -11,7 +11,7 @@
 import pytest
 
 from pcluster.aws.aws_resources import InstanceTypeInfo
-from pcluster.constants import PCLUSTER_NAME_MAX_LENGTH, SCHEDULERS_SUPPORTING_IMDS_SECURED
+from pcluster.constants import PCLUSTER_NAME_MAX_LENGTH
 from pcluster.validators.cluster_validators import (
     FSX_MESSAGES,
     FSX_SUPPORTED_ARCHITECTURES_OSES,
@@ -332,14 +332,6 @@ def test_disable_simultaneous_multithreading_architecture_validator(
     [
         (True, "alinux2", "x86_64", None),
         (True, "alinux2", "arm64", None),
-        (True, "centos8", "x86_64", None),
-        (
-            True,
-            "centos8",
-            "arm64",
-            "EFA is currently not supported on centos8 for arm64 architecture",
-        ),
-        (False, "centos8", "arm64", None),
         (True, "ubuntu1804", "x86_64", None),
         (True, "ubuntu1804", "arm64", None),
         (True, "ubuntu2004", "x86_64", None),
@@ -743,7 +735,6 @@ def test_intel_hpc_architecture_validator(architecture, expected_message):
     "os, expected_message",
     [
         ("centos7", None),
-        ("centos8", None),
         ("alinux2", "the operating system is required to be set"),
         ("ubuntu1804", "the operating system is required to be set"),
         ("ubuntu2004", "the operating system is required to be set"),
@@ -760,20 +751,19 @@ def test_intel_hpc_os_validator(os, expected_message):
 @pytest.mark.parametrize(
     "imds_secured, scheduler, expected_message",
     [
-        (None, "slurm", None),
+        (None, "slurm", "Cannot validate IMDS configuration if IMDS Secured is not set."),
         (True, "slurm", None),
         (False, "slurm", None),
-        (None, "awsbatch", None),
+        (None, "awsbatch", "Cannot validate IMDS configuration if IMDS Secured is not set."),
         (False, "awsbatch", None),
         (
             True,
             "awsbatch",
-            f"IMDS secured cannot be enabled in Head Node when using scheduler awsbatch. "
-            f"Supported schedulers are: {','.join(SCHEDULERS_SUPPORTING_IMDS_SECURED)}",
+            "IMDS Secured cannot be enabled when using scheduler awsbatch. Please, disable IMDS Secured.",
         ),
-        (None, None, "Cannot validate IMDS configuration with scheduler None."),
-        (True, None, "Cannot validate IMDS configuration with scheduler None."),
-        (False, None, "Cannot validate IMDS configuration with scheduler None."),
+        (None, None, "Cannot validate IMDS configuration if scheduler is not set."),
+        (True, None, "Cannot validate IMDS configuration if scheduler is not set."),
+        (False, None, "Cannot validate IMDS configuration if scheduler is not set."),
     ],
 )
 def test_head_node_imds_validator(imds_secured, scheduler, expected_message):
