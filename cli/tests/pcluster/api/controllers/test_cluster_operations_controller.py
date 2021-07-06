@@ -87,36 +87,52 @@ class TestCreateCluster:
         )
 
     @pytest.mark.parametrize(
-        "create_cluster_request_content, suppress_validators, validation_failure_level, rollback_on_failure",
+        "create_cluster_request_content, errors, suppress_validators, validation_failure_level, rollback_on_failure",
         [
-            (
+            pytest.param(
                 {
                     "region": "us-east-1",
                     "name": "cluster",
                     "clusterConfiguration": BASE64_ENCODED_CONFIG,
                 },
+                [ValidationResult("message", FailureLevel.WARNING, "type")],
                 None,
                 None,
                 None,
+                id="test with all errors",
             ),
-            (
+            pytest.param(
                 {
                     "region": "us-east-1",
                     "name": "cluster",
                     "clusterConfiguration": BASE64_ENCODED_CONFIG,
                 },
+                [ValidationResult("message", FailureLevel.WARNING, "type")],
                 ["type:type1", "type:type2"],
                 ValidationLevel.WARNING,
                 False,
+                id="test with filtered errors",
+            ),
+            pytest.param(
+                {
+                    "region": "us-east-1",
+                    "name": "cluster",
+                    "clusterConfiguration": BASE64_ENCODED_CONFIG,
+                },
+                [],
+                ["type:type1", "type:type2"],
+                ValidationLevel.WARNING,
+                False,
+                id="test with no errors",
             ),
         ],
-        ids=["required", "all"],
     )
     def test_successful_create_request(
         self,
         client,
         mocker,
         create_cluster_request_content,
+        errors,
         suppress_validators,
         validation_failure_level,
         rollback_on_failure,
@@ -124,7 +140,7 @@ class TestCreateCluster:
         cluster_create_mock = mocker.patch(
             "pcluster.models.cluster.Cluster.create",
             auto_spec=True,
-            return_value=("id", [ValidationResult("message", FailureLevel.WARNING, "type")]),
+            return_value=("id", errors),
         )
 
         response = self._send_test_request(
@@ -136,6 +152,8 @@ class TestCreateCluster:
             rollback_on_failure,
         )
 
+        messages = [{"level": "WARNING", "message": "message", "type": "type"}] if errors else []
+
         expected_response = {
             "cluster": {
                 "cloudformationStackArn": "id",
@@ -145,7 +163,7 @@ class TestCreateCluster:
                 "region": create_cluster_request_content["region"],
                 "version": "3.0.0",
             },
-            "validationMessages": [{"level": "WARNING", "message": "message", "type": "type"}],
+            "validationMessages": messages,
         }
 
         with soft_assertions():
@@ -1049,32 +1067,46 @@ class TestUpdateCluster:
         )
 
     @pytest.mark.parametrize(
-        "update_cluster_request_content, suppress_validators, validation_failure_level, force_update",
+        "update_cluster_request_content, errors, suppress_validators, validation_failure_level, force_update",
         [
-            (
+            pytest.param(
                 {
                     "clusterConfiguration": BASE64_ENCODED_CONFIG,
                 },
+                [ValidationResult("message", FailureLevel.WARNING, "type")],
                 None,
                 None,
                 None,
+                id="test with all errors",
             ),
-            (
+            pytest.param(
                 {
                     "clusterConfiguration": BASE64_ENCODED_CONFIG,
                 },
+                [ValidationResult("message", FailureLevel.WARNING, "type")],
                 ["type:type1", "type:type2"],
                 ValidationLevel.WARNING,
                 False,
+                id="test with filtered errors",
+            ),
+            pytest.param(
+                {
+                    "clusterConfiguration": BASE64_ENCODED_CONFIG,
+                },
+                [],
+                ["type:type1", "type:type2"],
+                ValidationLevel.WARNING,
+                False,
+                id="test with no errors",
             ),
         ],
-        ids=["required", "all"],
     )
     def test_successful_update_request(
         self,
         client,
         mocker,
         update_cluster_request_content,
+        errors,
         suppress_validators,
         validation_failure_level,
         force_update,
@@ -1088,7 +1120,7 @@ class TestUpdateCluster:
         cluster_update_mock = mocker.patch(
             "pcluster.models.cluster.Cluster.update",
             auto_spec=True,
-            return_value=(change_set, [ValidationResult("message", FailureLevel.WARNING, "type")]),
+            return_value=(change_set, errors),
         )
 
         response = self._send_test_request(
@@ -1102,6 +1134,8 @@ class TestUpdateCluster:
             force_update,
         )
 
+        messages = [{"level": "WARNING", "message": "message", "type": "type"}] if errors else []
+
         expected_response = {
             "cluster": {
                 "cloudformationStackArn": stack_data["StackId"],
@@ -1111,7 +1145,7 @@ class TestUpdateCluster:
                 "region": "us-east-1",
                 "version": "3.0.0",
             },
-            "validationMessages": [{"level": "WARNING", "message": "message", "type": "type"}],
+            "validationMessages": messages,
             "changeSet": [
                 {"parameter": "toplevel.subpath.param", "requestedValue": "newval", "currentValue": "oldval"}
             ],
