@@ -33,8 +33,8 @@ def _cloudformation_wait(region, stack_name, status):
 
 
 @pytest.mark.usefixtures("region", "os", "instance")
-def test_cluster_operations(request, scheduler, region, pcluster_config_reader, clusters_factory, api_client):
-    cluster_config_path = pcluster_config_reader(scaledown_idletime=3)
+def test_cluster_operations(request, scheduler, region, pcluster_config_reader, api_client):
+    cluster_config_path = pcluster_config_reader()
 
     with open(cluster_config_path) as config_file:
         cluster_config = config_file.read()
