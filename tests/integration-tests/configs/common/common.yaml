@@ -1,3 +1,10 @@
+api:
+  test_api_client.py::test_cluster_operations:
+    dimensions:
+      - regions: ["af-south-1"]
+        instances: {{ common.INSTANCES_DEFAULT_X86 }}
+        oss: ["alinux2"]
+        schedulers: ["slurm"]
 arm_pl:
   test_arm_pl.py::test_arm_pl:
     dimensions:
